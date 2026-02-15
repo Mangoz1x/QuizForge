@@ -1,26 +1,234 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-inter);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Question card entrance */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-in {
+  animation: fadeSlideIn 300ms ease-out both;
+}
+
+/* Streaming dots */
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+.streaming-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: currentColor;
+  display: inline-block;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+/* Artifact sidebar */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 200ms ease-out both;
+}
+
+/* Spinning gradient border for modified questions */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.gradient-ring {
+  background: conic-gradient(
+    from var(--border-angle),
+    #fca5a5, #fdba74, #fde047, #86efac, #93c5fd, #c4b5fd, #f9a8d4, #fca5a5
+  );
+  padding: 2px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: spin-border 1s linear forwards, fade-border 1s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes spin-border {
+  to { --border-angle: 360deg; }
+}
+
+@keyframes fade-border {
+  0%, 60% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Pulsing border for questions being modified by AI */
+.working-ring {
+  background: conic-gradient(
+    from var(--border-angle),
+    #cbd5e1, #94a3b8, #cbd5e1, #94a3b8, #cbd5e1
+  );
+  padding: 2px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: spin-border 1.5s linear infinite, pulse-ring 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse-ring {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* Callout tooltip */
+@keyframes calloutIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.callout-in {
+  animation: calloutIn 200ms ease-out both;
+}
+
+/* Tutorial dialog */
+@keyframes tutorialBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes tutorialModalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes tutorialStepIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.tutorial-backdrop-in {
+  animation: tutorialBackdropIn 200ms ease-out both;
+}
+
+.tutorial-modal-in {
+  animation: tutorialModalIn 300ms ease-out both;
+}
+
+.tutorial-step-in {
+  animation: tutorialStepIn 250ms ease-out both;
+}
+
+/* Step 1: Floating document */
+@keyframes tutorialFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.tutorial-float {
+  animation: tutorialFloat 3s ease-in-out infinite;
+}
+
+@keyframes tutorialBadge {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-8deg) scale(1.1); }
+  75% { transform: rotate(8deg) scale(1.1); }
+}
+
+.tutorial-badge {
+  animation: tutorialBadge 2s ease-in-out infinite;
+}
+
+/* Step 1: Lines appearing */
+@keyframes tutorialLineIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.tutorial-line-1 { animation: tutorialLineIn 400ms ease-out 200ms both; }
+.tutorial-line-2 { animation: tutorialLineIn 400ms ease-out 400ms both; }
+.tutorial-line-3 { animation: tutorialLineIn 400ms ease-out 600ms both; }
+.tutorial-line-4 { animation: tutorialLineIn 400ms ease-out 800ms both; }
+.tutorial-line-5 { animation: tutorialLineIn 400ms ease-out 1000ms both; }
+.tutorial-line-6 { animation: tutorialLineIn 400ms ease-out 1200ms both; }
+
+/* Step 2: Button pulse + card appear */
+@keyframes tutorialButtonPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.tutorial-button-pulse {
+  animation: tutorialButtonPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tutorialCardAppear {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tutorial-card-appear-1 { animation: tutorialCardAppear 400ms ease-out 600ms both; }
+.tutorial-card-appear-2 { animation: tutorialCardAppear 400ms ease-out 900ms both; }
+
+/* Step 3: Messages appearing */
+@keyframes tutorialMsgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tutorial-msg-1 { animation: tutorialMsgIn 400ms ease-out 200ms both; }
+.tutorial-msg-2 { animation: tutorialMsgIn 400ms ease-out 700ms both; }
+.tutorial-msg-3 { animation: tutorialMsgIn 400ms ease-out 1200ms both; }
+
+/* Step 3: Typing cursor blink */
+@keyframes tutorialTyping {
+  0%, 100% { border-right-color: transparent; }
+  50% { border-right-color: #94a3b8; }
+}
+
+.tutorial-typing {
+  border-right: 2px solid transparent;
+  animation: tutorialTyping 1s step-end infinite;
+  display: inline-block;
+}
+
+/* Step 4: Checks appearing */
+@keyframes tutorialCheckIn {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.tutorial-check-1 { animation: tutorialCheckIn 300ms ease-out 300ms both; }
+.tutorial-check-2 { animation: tutorialCheckIn 300ms ease-out 600ms both; }
+.tutorial-check-3 { animation: tutorialCheckIn 300ms ease-out 900ms both; }
+
+/* Step 4: Export button bounce */
+@keyframes tutorialExportBtn {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-4px); }
+  60% { transform: translateY(-2px); }
+}
+
+.tutorial-export-btn {
+  animation: tutorialExportBtn 1.5s ease-in-out 1.2s infinite;
 }
