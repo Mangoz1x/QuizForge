@@ -41,7 +41,7 @@ export async function POST(request) {
     }));
 
     const stream = client.messages.stream({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-sonnet-4-6",
       max_tokens: 16384,
       system: buildSystemPrompt(form),
       messages: claudeMessages,

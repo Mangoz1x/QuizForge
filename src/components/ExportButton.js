@@ -119,19 +119,27 @@ export default function ExportButton() {
   }
 
   // Not exported yet — show export button
+  const disabled = !hasQuestions || exporting;
+  const label = exporting ? "Exporting..." : "Export to Google Forms";
+
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="relative flex items-center gap-2 group">
         {errorMsg && <span className="text-xs text-red-600">{errorMsg}</span>}
         <Button
           variant="secondary"
           size="sm"
           icon={exporting ? Loader2 : FileUp}
-          disabled={!hasQuestions || exporting}
+          disabled={disabled}
           onClick={handleExport}
         >
-          {exporting ? "Exporting..." : "Export"}
+          {label}
         </Button>
+        {disabled && !exporting && (
+          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-slate-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            Add questions before exporting
+          </div>
+        )}
       </div>
       <ExportTutorialDialog
         open={showTutorial}

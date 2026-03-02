@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { FileQuestion, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -10,14 +10,17 @@ import FormBuilder from "@/components/FormBuilder";
 
 export default function QuizEditorPage() {
   const { id } = useParams();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const { quiz, notFound } = useMemo(() => {
-    if (typeof window === "undefined") return { quiz: null, notFound: false };
+    if (!mounted) return { quiz: null, notFound: false };
     const data = getQuiz(id);
     return data ? { quiz: data, notFound: false } : { quiz: null, notFound: true };
-  }, [id]);
+  }, [id, mounted]);
 
-  if (!quiz && !notFound) return null;
+  if (!mounted || (!quiz && !notFound)) return null;
 
   if (notFound) {
     return (

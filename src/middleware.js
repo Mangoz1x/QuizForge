@@ -7,6 +7,7 @@ export function middleware(request) {
   // Allow public routes
   if (
     pathname === "/" ||
+    pathname === "/access" ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/google/callback") ||
     pathname.startsWith("/_next") ||
@@ -18,7 +19,7 @@ export function middleware(request) {
   const cookie = request.cookies.get(COOKIE_NAME);
 
   if (!cookie || cookie.value !== "valid") {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/access", request.url));
   }
 
   return NextResponse.next();

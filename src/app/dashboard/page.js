@@ -42,63 +42,38 @@ export default function DashboardPage() {
     <div className="min-h-screen px-4 py-12">
       <TutorialDialog />
       <div className="mx-auto max-w-xl">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-semibold text-slate-900">Your Quizzes</h1>
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-          >
-            <Plus size={16} />
-            New Quiz
-          </button>
-        </div>
-
         {quizzes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="border border-slate-200 rounded-lg bg-white p-8 w-full max-w-sm">
-              <FileText size={28} className="text-slate-300 mx-auto mb-3" />
-              <h2 className="text-lg font-medium text-slate-900 mb-1">
+          <div className="flex items-center justify-center min-h-[70vh]">
+            <div className="border border-slate-200 rounded-lg bg-white p-10 w-full max-w-md text-center">
+              <FileText size={36} className="text-slate-300 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">
                 No quizzes yet
               </h2>
-              <p className="text-sm text-slate-500 mb-6">
-                Create your first quiz and let AI do the heavy lifting.
+              <p className="text-base text-slate-500 mb-8 leading-relaxed">
+                Paste your class material, generate questions with AI, and
+                export straight to Google Forms.
               </p>
-
-              <div className="flex flex-col gap-3 mb-6 text-left">
-                <div className="flex items-start gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-medium flex-shrink-0 mt-0.5">1</span>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">Paste your content</p>
-                    <p className="text-xs text-slate-400">Notes, textbook material, anything</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-medium flex-shrink-0 mt-0.5">2</span>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">AI generates your quiz</p>
-                    <p className="text-xs text-slate-400">Multiple choice, short answer, and more</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 text-xs font-medium flex-shrink-0 mt-0.5">3</span>
-                  <div>
-                    <p className="text-sm font-medium text-slate-700">Export to Google Forms</p>
-                    <p className="text-xs text-slate-400">Ready for your students in one click</p>
-                  </div>
-                </div>
-              </div>
-
               <button
                 onClick={handleCreate}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-2 w-full px-5 py-3 text-base font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                <Plus size={16} />
-                Create Your First Quiz
+                <Plus size={18} />
+                Create quiz
               </button>
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-semibold text-slate-900">Your Quizzes</h1>
+              <button
+                onClick={handleCreate}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <Plus size={16} />
+                New Quiz
+              </button>
+            </div>
             {quizzes.map((quiz) => (
               <button
                 key={quiz.id}
