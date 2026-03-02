@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
 import { FileQuestion, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -8,11 +8,13 @@ import { getQuiz } from "@/lib/storage";
 import { FormProvider } from "@/lib/form-context";
 import FormBuilder from "@/components/FormBuilder";
 
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export default function QuizEditorPage() {
   const { id } = useParams();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const { quiz, notFound } = useMemo(() => {
     if (!mounted) return { quiz: null, notFound: false };

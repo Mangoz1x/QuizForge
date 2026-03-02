@@ -18,22 +18,21 @@ function EditableTitle() {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    setValue(form.title);
-  }, [form.title]);
-
-  useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
     }
   }, [editing]);
 
+  function startEditing() {
+    setValue(form.title);
+    setEditing(true);
+  }
+
   function commit() {
     const trimmed = value.trim();
     if (trimmed && trimmed !== form.title) {
       updateFormHeader({ title: trimmed });
-    } else {
-      setValue(form.title);
     }
     setEditing(false);
   }
@@ -59,7 +58,7 @@ function EditableTitle() {
 
   return (
     <h1
-      onClick={() => setEditing(true)}
+      onClick={startEditing}
       className="text-lg font-medium text-slate-900 truncate cursor-text rounded px-1 -mx-1 hover:bg-slate-50 transition-colors"
       title="Click to rename"
     >
