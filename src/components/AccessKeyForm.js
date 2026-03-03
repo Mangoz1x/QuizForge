@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { LogIn } from "lucide-react";
 import { Button, Input } from "@/components/ui";
 
@@ -9,7 +8,6 @@ export default function AccessKeyForm() {
   const [key, setKey] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -26,7 +24,8 @@ export default function AccessKeyForm() {
       const data = await res.json();
 
       if (data.success) {
-        router.push("/dashboard");
+        window.location.href = "/dashboard";
+        return;
       } else {
         setError(data.error || "Invalid access key");
       }
