@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 const appName = process.env.NEXT_PUBLIC_APP_NAME;
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://quizfuse.com";
 const description =
   "Turn your class notes, textbook passages, and study guides into ready-to-use Google Forms quizzes in minutes. Built for teachers.";
 
