@@ -3,15 +3,53 @@ import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui";
 import HeroAnimation from "@/components/HeroAnimation";
 
+function JsonLd() {
+  const appName = process.env.NEXT_PUBLIC_APP_NAME;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: appName,
+    url: siteUrl,
+    description:
+      "Turn your class notes, textbook passages, and study guides into ready-to-use Google Forms quizzes in minutes. Built for teachers.",
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Web",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "CAD",
+    },
+    audience: {
+      "@type": "EducationalAudience",
+      educationalRole: "teacher",
+    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  );
+}
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-white">
+      <JsonLd />
+
       {/* Nav */}
-      <nav className="border-b border-slate-100">
+      <header>
+      <nav className="border-b border-slate-100" aria-label="Main navigation">
         <div className="flex items-center justify-between px-4 lg:px-12 py-3.5 max-w-6xl mx-auto">
-          <span className="text-lg font-semibold text-slate-900">
-            QuizForge
-          </span>
+          <div className="flex items-center gap-2">
+            <img src="/Logo.svg" alt="" width={24} height={24} className="rounded" />
+            <span className="text-lg font-semibold text-slate-900">
+              {process.env.NEXT_PUBLIC_APP_NAME}
+            </span>
+          </div>
           <Link href="/dashboard">
             <Button variant="primary" size="sm">
               Create quiz
@@ -20,7 +58,9 @@ export default function Home() {
           </Link>
         </div>
       </nav>
+      </header>
 
+      <main>
       {/* Hero */}
       <section className="px-4 lg:px-12 pt-16 pb-20 lg:pt-24 lg:pb-28 max-w-6xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
@@ -84,7 +124,7 @@ export default function Home() {
                 </svg>
               </div>
               <div className="border border-slate-200 rounded-lg bg-white p-4">
-                <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">QuizForge generates</div>
+                <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">{process.env.NEXT_PUBLIC_APP_NAME} generates</div>
                 <div className="space-y-2.5">
                   <div className="flex items-start gap-2">
                     <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-semibold text-slate-500 shrink-0 mt-0.5">1</div>
@@ -192,7 +232,7 @@ export default function Home() {
           </h2>
 
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-0">
-            {/* QuizForge side */}
+            {/* App side */}
             <div className="flex-1 w-full border border-slate-200 rounded-lg overflow-hidden">
               <div className="bg-slate-50 border-b border-slate-200 px-4 py-2.5 flex items-center gap-2">
                 <div className="flex gap-1.5">
@@ -200,7 +240,7 @@ export default function Home() {
                   <div className="w-2.5 h-2.5 rounded-full bg-slate-200" />
                   <div className="w-2.5 h-2.5 rounded-full bg-slate-200" />
                 </div>
-                <span className="text-xs font-medium text-slate-400 ml-1">QuizForge</span>
+                <span className="text-xs font-medium text-slate-400 ml-1">{process.env.NEXT_PUBLIC_APP_NAME}</span>
               </div>
               <div className="p-4 bg-white space-y-3">
                 <div className="flex items-center gap-2">
@@ -317,6 +357,40 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-200 bg-slate-50">
+        <div className="px-4 lg:px-12 py-10 max-w-6xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col items-center md:items-start gap-1">
+              <div className="flex items-center gap-2">
+                <img src="/Logo.svg" alt="" width={20} height={20} className="rounded" />
+                <span className="text-sm font-semibold text-slate-900">
+                  {process.env.NEXT_PUBLIC_APP_NAME}
+                </span>
+              </div>
+              <span className="text-xs text-slate-400">
+                Quiz generation for educators
+              </span>
+            </div>
+            <nav className="flex items-center gap-6">
+              <Link href="/terms" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                Terms of Service
+              </Link>
+              <Link href="/privacy" className="text-xs text-slate-400 hover:text-slate-600 transition-colors">
+                Privacy Policy
+              </Link>
+            </nav>
+          </div>
+          <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+            <span className="text-xs text-slate-300">
+              &copy; {new Date().getFullYear()} {process.env.NEXT_PUBLIC_APP_NAME}
+            </span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

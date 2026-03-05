@@ -319,7 +319,7 @@ function WindowChrome({ children }) {
           <div className="w-2.5 h-2.5 rounded-full bg-slate-300" />
         </div>
         <span className="text-xs font-medium text-slate-400 ml-2">
-          QuizForge
+          {process.env.NEXT_PUBLIC_APP_NAME}
         </span>
       </div>
       {children}

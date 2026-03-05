@@ -11,7 +11,7 @@ export default function AccessPage() {
             Enter your access key
           </h1>
           <p className="text-sm text-slate-500">
-            You need an access key to use QuizForge.
+            You need an access key to use {process.env.NEXT_PUBLIC_APP_NAME}.
           </p>
         </div>
         <AccessKeyForm />

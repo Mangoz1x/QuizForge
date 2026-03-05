@@ -182,9 +182,9 @@ function ExportVisual() {
 
 const steps = [
   {
-    title: "Welcome to QuizForge",
+    title: `Welcome to ${process.env.NEXT_PUBLIC_APP_NAME}`,
     description:
-      "QuizForge helps you create ready-to-use Google Forms quizzes in seconds. Paste your class content and let AI generate a complete quiz for you.",
+      `${process.env.NEXT_PUBLIC_APP_NAME} helps you create ready-to-use Google Forms quizzes in seconds. Paste your class content and let AI generate a complete quiz for you.`,
     Visual: WelcomeVisual,
   },
   {

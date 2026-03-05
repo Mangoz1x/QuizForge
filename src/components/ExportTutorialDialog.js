@@ -23,7 +23,7 @@ function ExportVisual() {
             {/* Folder tab */}
             <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100">
               <FolderOpen size={14} className="text-slate-400" />
-              <span className="text-xs font-medium text-slate-600">QuizForge</span>
+              <span className="text-xs font-medium text-slate-600">{process.env.NEXT_PUBLIC_APP_NAME}</span>
             </div>
             {/* Form inside folder */}
             <div className="p-2.5 space-y-1.5">
@@ -87,7 +87,7 @@ export default function ExportTutorialDialog({ open, onClose }) {
             Export to Google Drive
           </h2>
           <p className="text-sm text-slate-600 leading-relaxed mb-3">
-            Your quiz will be saved to the <span className="font-medium text-slate-800">QuizForge</span> folder in your Google Drive as a Google Form.
+            Your quiz will be saved to the <span className="font-medium text-slate-800">{process.env.NEXT_PUBLIC_APP_NAME}</span> folder in your Google Drive as a Google Form.
           </p>
           <p className="text-sm text-slate-600 leading-relaxed">
             Any changes you make after exporting — including AI edits — will automatically sync to your Google Form. No need to re-export.

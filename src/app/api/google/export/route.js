@@ -4,7 +4,7 @@ import { isChoiceType } from "@/lib/form-schema";
 
 const FORMS_API = "https://forms.googleapis.com/v1/forms";
 const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
-const FOLDER_NAME = "QuizForge";
+const FOLDER_NAME = process.env.NEXT_PUBLIC_APP_NAME;
 
 async function getOrCreateFolder(accessToken) {
   // Search for existing folder
