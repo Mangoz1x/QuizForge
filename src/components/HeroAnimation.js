@@ -13,6 +13,8 @@ const QUESTIONS = [
     title: "What year did the American Revolution begin?",
     options: ["1776", "1775", "1774", "1783"],
     correct: 1,
+    correctFeedback: "Correct! The first battles at Lexington and Concord took place in 1775.",
+    incorrectFeedback: "Incorrect. The Revolution began in 1775 with the battles of Lexington and Concord.",
   },
   {
     num: 2,
@@ -25,6 +27,8 @@ const QUESTIONS = [
       "Magna Carta",
     ],
     correct: 1,
+    correctFeedback: "Correct! The Declaration of Independence was adopted on July 4, 1776.",
+    incorrectFeedback: "Incorrect. The Declaration of Independence, not the Constitution, declared independence.",
   },
   {
     num: 3,
@@ -42,17 +46,28 @@ export default function HeroAnimation() {
   const [typedCount, setTypedCount] = useState(0);
   const [fading, setFading] = useState(false);
   const [cursorStep, setCursorStep] = useState(0);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [exportClicked, setExportClicked] = useState(false);
   const [exportDone, setExportDone] = useState(false);
   const [scrollY, setScrollY] = useState(0);
   const [showScrollHint, setShowScrollHint] = useState(false);
   const containerRef = useRef(null);
+  const viewportRef = useRef(null);
+  const contentRef = useRef(null);
   const timeoutsRef = useRef([]);
 
   const schedule = useCallback((fn, ms) => {
     const id = setTimeout(fn, ms);
     timeoutsRef.current.push(id);
     return id;
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    const viewport = viewportRef.current;
+    const content = contentRef.current;
+    if (!viewport || !content) return;
+    const overflow = content.scrollHeight - viewport.clientHeight;
+    if (overflow > 0) setScrollY(-overflow);
   }, []);
 
   useEffect(() => {
@@ -90,43 +105,50 @@ export default function HeroAnimation() {
     schedule(() => setPhase(2), 3500); // "click" — phase advances
     schedule(() => setCursorStep(0), 3700); // cursor lingers, then hides
 
-    // Cards visible ~4.5s — show scroll hint, then auto-scroll down
-    schedule(() => setShowScrollHint(true), 4600);
-    schedule(() => setScrollY(-70), 5100);
-    schedule(() => setShowScrollHint(false), 6000);
+    // Cards visible — reveal feedback (correct/incorrect + model answer)
+    schedule(() => setShowFeedback(true), 4500);
+
+    // After feedback, show scroll hint, then auto-scroll down
+    schedule(() => setShowScrollHint(true), 5600);
+    schedule(() => { setShowScrollHint(false); scrollToBottom(); }, 6100);
 
     // Phase 2 → 3: export
-    schedule(() => setPhase(3), 6500);
+    schedule(() => setPhase(3), 7500);
 
     // Cursor glides to export button, clicks
-    schedule(() => setCursorStep(3), 6800);
-    schedule(() => setCursorStep(4), 7100); // arrives ~7500ms
+    schedule(() => setCursorStep(3), 7800);
+    schedule(() => setCursorStep(4), 8100);
     schedule(() => {
       setCursorStep(0);
       setExportClicked(true);
-    }, 7700);
-    schedule(() => setExportDone(true), 8700);
+    }, 8700);
+    schedule(() => setExportDone(true), 9700);
 
     // Phase 3 → 4: Google Form (reset scroll so form starts at top)
     schedule(() => {
       setPhase(4);
       setScrollY(0);
-    }, 9200);
+    }, 10200);
+
+    // Google Form scroll — show hint, then scroll to bottom
+    schedule(() => setShowScrollHint(true), 11400);
+    schedule(() => { setShowScrollHint(false); scrollToBottom(); }, 11900);
 
     // Fade out and loop
-    schedule(() => setFading(true), 12000);
+    schedule(() => setFading(true), 14200);
     schedule(() => {
       setPhase(0);
       setTypedCount(0);
       setFading(false);
       setCursorStep(0);
+      setShowFeedback(false);
       setExportClicked(false);
       setExportDone(false);
       setScrollY(0);
       setShowScrollHint(false);
       setCycle((c) => c + 1);
-    }, 12800);
-  }, [cycle, prefersReducedMotion, schedule]);
+    }, 14800);
+  }, [cycle, prefersReducedMotion, schedule, scrollToBottom]);
 
   if (prefersReducedMotion) {
     return (
@@ -158,7 +180,7 @@ export default function HeroAnimation() {
               className="flex flex-col h-full"
             >
               {/* Main content area */}
-              <div className="flex-1 overflow-hidden relative">
+              <div ref={viewportRef} className="flex-1 overflow-hidden relative">
                 {/* Phase 0-1: Empty state (absolute, doesn't scroll) */}
                 {phase <= 1 && (
                   <div className="absolute inset-0 flex items-center justify-center">
@@ -190,6 +212,7 @@ export default function HeroAnimation() {
 
                 {/* Scrollable content — translateY driven by timeline */}
                 <motion.div
+                  ref={contentRef}
                   key={phase <= 3 ? "quiz" : "form"}
                   className="p-3 md:p-4"
                   animate={{ y: scrollY }}
@@ -209,7 +232,7 @@ export default function HeroAnimation() {
                             ease: "easeOut",
                           }}
                         >
-                          <MockQuestionCard question={q} />
+                          <MockQuestionCard question={q} showFeedback={showFeedback} />
                         </motion.div>
                       ))}
                     </div>
@@ -434,8 +457,8 @@ function ExportBar({ clicked, done }) {
   );
 }
 
-function MockQuestionCard({ question }) {
-  const { num, type, title, options, correct, answer } = question;
+function MockQuestionCard({ question, showFeedback = true }) {
+  const { num, type, title, options, correct, answer, correctFeedback, incorrectFeedback } = question;
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg">
@@ -450,8 +473,13 @@ function MockQuestionCard({ question }) {
       <div className="px-3 pb-1.5">
         <p className="text-xs font-medium text-slate-900">{title}</p>
       </div>
-      {options && (
-        <div className="px-3 pb-2">
+      {options && showFeedback && (
+        <motion.div
+          className="px-3 pb-2"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          transition={{ duration: 0.3 }}
+        >
           <div className="border border-dashed border-slate-200 rounded px-2.5 py-1.5 flex flex-col gap-1">
             {options.map((opt, i) => (
               <div
@@ -462,25 +490,52 @@ function MockQuestionCard({ question }) {
                     : "bg-red-50/40"
                 } ${i >= 2 ? "hidden md:flex" : "flex"}`}
               >
-                {i === correct ? (
-                  <Check
-                    size={10}
-                    className="flex-shrink-0 text-green-500"
-                  />
-                ) : (
-                  <X size={10} className="flex-shrink-0 text-red-400" />
-                )}
-                <span
-                  className={
-                    i === correct ? "text-green-700" : "text-slate-500"
-                  }
+                <motion.span
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.15 + i * 0.05 }}
                 >
+                  {i === correct ? (
+                    <Check size={10} className="flex-shrink-0 text-green-500" />
+                  ) : (
+                    <X size={10} className="flex-shrink-0 text-red-400" />
+                  )}
+                </motion.span>
+                <span className={i === correct ? "text-green-700" : "text-slate-500"}>
                   {opt}
                 </span>
               </div>
             ))}
           </div>
-        </div>
+          {/* Correct feedback */}
+          {correctFeedback && (
+            <motion.div
+              className="mt-1.5 px-2 py-1.5 bg-green-50/60 border border-green-200 rounded"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+            >
+              <p className="text-[10px] text-green-700 leading-relaxed">
+                <Check size={8} className="inline-block mr-1 -mt-0.5 text-green-500" />
+                {correctFeedback}
+              </p>
+            </motion.div>
+          )}
+          {/* Incorrect feedback */}
+          {incorrectFeedback && (
+            <motion.div
+              className="mt-1 px-2 py-1.5 bg-red-50/60 border border-red-200 rounded"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.45 }}
+            >
+              <p className="text-[10px] text-red-600 leading-relaxed">
+                <X size={8} className="inline-block mr-1 -mt-0.5 text-red-400" />
+                {incorrectFeedback}
+              </p>
+            </motion.div>
+          )}
+        </motion.div>
       )}
       {type === "Short Answer" && (
         <div className="px-3 pb-2">
@@ -491,16 +546,27 @@ function MockQuestionCard({ question }) {
           </div>
         </div>
       )}
-      {/* Answer key section */}
-      {type === "Short Answer" && answer && (
-        <div className="px-3 pb-3">
+      {/* Model answer — animates in with feedback */}
+      {type === "Short Answer" && answer && showFeedback && (
+        <motion.div
+          className="px-3 pb-3"
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          transition={{ duration: 0.3 }}
+        >
           <div className="flex items-start gap-1.5 px-2.5 py-1.5 bg-green-50/60 border border-green-200 rounded">
-            <Check size={10} className="flex-shrink-0 text-green-500 mt-0.5" />
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.15, type: "spring", stiffness: 400, damping: 15 }}
+            >
+              <Check size={10} className="flex-shrink-0 text-green-500 mt-0.5" />
+            </motion.span>
             <p className="text-[11px] text-green-700">
-              <span className="font-medium">Answer:</span> {answer}
+              <span className="font-medium">Model answer:</span> {answer}
             </p>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
@@ -550,6 +616,22 @@ function MockGoogleForm() {
                     </span>
                   </div>
                 ))}
+                {q.correctFeedback && (
+                  <div className="mt-1 px-2 py-1.5 bg-green-50 border border-green-200 rounded">
+                    <p className="text-[10px] text-green-700 leading-relaxed">
+                      <Check size={8} className="inline-block mr-1 -mt-0.5 text-green-500" />
+                      {q.correctFeedback}
+                    </p>
+                  </div>
+                )}
+                {q.incorrectFeedback && (
+                  <div className="mt-0.5 px-2 py-1.5 bg-red-50 border border-red-200 rounded">
+                    <p className="text-[10px] text-red-600 leading-relaxed">
+                      <X size={8} className="inline-block mr-1 -mt-0.5 text-red-400" />
+                      {q.incorrectFeedback}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-1.5">
@@ -562,7 +644,7 @@ function MockGoogleForm() {
                   <div className="flex items-center gap-1.5 text-[11px]">
                     <Check size={9} className="text-[#673AB7] flex-shrink-0" />
                     <span className="text-slate-700">
-                      <span className="font-medium">Answer:</span> {q.answer}
+                      <span className="font-medium">Model answer:</span> {q.answer}
                     </span>
                   </div>
                 )}

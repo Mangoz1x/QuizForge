@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui";
 import HeroAnimation from "@/components/HeroAnimation";
+import LanguageAnimation from "@/components/LanguageAnimation";
 
 function JsonLd() {
   const appName = process.env.NEXT_PUBLIC_APP_NAME;
@@ -41,8 +42,8 @@ export default function Home() {
       <JsonLd />
 
       {/* Nav */}
-      <header>
-      <nav className="border-b border-slate-100" aria-label="Main navigation">
+      <header className="sticky top-0 z-50">
+      <nav className="border-b border-slate-100 bg-white/95 backdrop-blur-sm" aria-label="Main navigation">
         <div className="flex items-center justify-between px-4 lg:px-12 py-3.5 max-w-6xl mx-auto">
           <div className="flex items-center gap-2">
             <img src="/Logo.svg" alt="" width={24} height={24} className="rounded" />
@@ -100,10 +101,7 @@ export default function Home() {
                 <span className="text-slate-300">Your questions.</span>
               </h2>
               <p className="text-base lg:text-lg text-slate-500 leading-relaxed mt-6">
-                Every question is generated from the content you provide — notes,
-                textbook passages, study guides. No outside information, no AI
-                hallucinations. Students are only tested on what they&apos;ve
-                actually been taught.
+                Every question comes directly from the content you provide. Nothing made up.
               </p>
             </div>
 
@@ -111,10 +109,8 @@ export default function Home() {
             <div className="flex flex-col gap-3">
               <div className="border border-slate-200 rounded-lg bg-white p-4">
                 <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">You provide</div>
-                <div className="space-y-2">
-                  <div className="text-sm text-slate-500 leading-relaxed">
-                    <span className="bg-slate-100 text-slate-700 px-1 rounded">Mitosis</span> is the process by which a single cell divides to produce two identical daughter cells. It occurs in <span className="bg-slate-100 text-slate-700 px-1 rounded">four stages</span>: prophase, metaphase, anaphase, and telophase...
-                  </div>
+                <div className="text-sm text-slate-500 leading-relaxed">
+                  <span className="bg-amber-100 text-slate-700 px-1 rounded border border-amber-200">Mitosis</span> is the process by which a single cell divides to produce <span className="bg-blue-100 text-slate-700 px-1 rounded border border-blue-200">two identical daughter cells</span>. It occurs in <span className="bg-emerald-100 text-slate-700 px-1 rounded border border-emerald-200">four stages</span>: prophase, metaphase, anaphase, and telophase...
                 </div>
               </div>
               <div className="flex justify-center text-slate-300">
@@ -127,12 +123,12 @@ export default function Home() {
                 <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">{process.env.NEXT_PUBLIC_APP_NAME} generates</div>
                 <div className="space-y-2.5">
                   <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-semibold text-slate-500 shrink-0 mt-0.5">1</div>
-                    <div className="text-sm text-slate-700">What are the four stages of mitosis?</div>
+                    <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] font-semibold text-emerald-600 shrink-0 mt-0.5 border border-emerald-200">1</div>
+                    <div className="text-sm text-slate-700">What are the <span className="bg-emerald-100 text-slate-700 px-0.5 rounded border border-emerald-200">four stages</span> of mitosis?</div>
                   </div>
                   <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-semibold text-slate-500 shrink-0 mt-0.5">2</div>
-                    <div className="text-sm text-slate-700">What does mitosis produce?</div>
+                    <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-semibold text-blue-600 shrink-0 mt-0.5 border border-blue-200">2</div>
+                    <div className="text-sm text-slate-700">What does <span className="bg-amber-100 text-slate-700 px-0.5 rounded border border-amber-200">mitosis</span> produce?</div>
                   </div>
                 </div>
               </div>
@@ -141,65 +137,85 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Language translation */}
+      <section className="border-t border-slate-100">
+        <div className="px-4 lg:px-12 py-20 lg:py-28 max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-5xl font-semibold text-slate-900 leading-[1.15] tracking-tight">
+              Any language.
+              <br />
+              <span className="text-slate-300">Instantly.</span>
+            </h2>
+            <p className="text-base lg:text-lg text-slate-500 leading-relaxed mt-6">
+              Support ELL students and language accommodations — translate your entire quiz with one prompt.
+            </p>
+          </div>
+          <LanguageAnimation />
+        </div>
+      </section>
+
       {/* Equivalent assessments */}
       <section className="border-t border-slate-100">
         <div className="px-4 lg:px-12 py-20 lg:py-28 max-w-4xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* UI component — two test versions stacked */}
-            <div className="flex flex-col gap-3 md:order-1">
-              <div className="border border-slate-200 rounded-lg bg-white p-4">
-                <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">Version A — Original test</div>
-                <div className="space-y-2.5">
-                  <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">1</div>
-                    <div className="text-sm text-slate-700">Name the four stages of mitosis.</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">2</div>
-                    <div className="text-sm text-slate-700">What does mitosis produce?</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">3</div>
-                    <div className="text-sm text-slate-700">During which phase do chromosomes align at the center?</div>
-                  </div>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl lg:text-5xl font-semibold text-slate-900 leading-[1.15] tracking-tight">
+              Same depth.
+              <br />
+              <span className="text-slate-300">Different questions.</span>
+            </h2>
+            <p className="text-base lg:text-lg text-slate-500 leading-relaxed mt-6">
+              Generate a makeup test with the same coverage — different questions, same standard.
+            </p>
+          </div>
+
+          {/* Side-by-side versions */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="border border-slate-200 rounded-lg bg-white p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Version A</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">Mitosis</span>
+                  <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">3 questions</span>
                 </div>
               </div>
-              <div className="flex justify-center text-slate-300">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 5v14" />
-                  <path d="m19 12-7 7-7-7" />
-                </svg>
-              </div>
-              <div className="border border-slate-200 rounded-lg bg-white p-4">
-                <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-3">Version B — Makeup test</div>
-                <div className="space-y-2.5">
-                  <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">1</div>
-                    <div className="text-sm text-slate-700">Which phase follows prophase in mitosis?</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">2</div>
-                    <div className="text-sm text-slate-700">How many cells result from a single round of mitosis?</div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">3</div>
-                    <div className="text-sm text-slate-700">In which phase do sister chromatids separate?</div>
-                  </div>
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">1</div>
+                  <div className="text-sm text-slate-700">Name the four stages of mitosis.</div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">2</div>
+                  <div className="text-sm text-slate-700">What does mitosis produce?</div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-semibold text-white shrink-0 mt-0.5">3</div>
+                  <div className="text-sm text-slate-700">During which phase do chromosomes align at the center?</div>
                 </div>
               </div>
             </div>
 
-            <div className="md:order-0">
-              <h2 className="text-3xl lg:text-5xl font-semibold text-slate-900 leading-[1.15] tracking-tight">
-                Same depth.
-                <br />
-                <span className="text-slate-300">Different questions.</span>
-              </h2>
-              <p className="text-base lg:text-lg text-slate-500 leading-relaxed mt-6">
-                Need a makeup test for students who were absent? Generate a new
-                version with the same complexity and coverage — different
-                questions, same standard.
-              </p>
+            <div className="border border-slate-200 rounded-lg bg-white p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">Version B</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">Mitosis</span>
+                  <span className="text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">3 questions</span>
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-semibold text-slate-900 shrink-0 mt-0.5">1</div>
+                  <div className="text-sm text-slate-700">Which phase follows prophase in mitosis?</div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-semibold text-slate-900 shrink-0 mt-0.5">2</div>
+                  <div className="text-sm text-slate-700">How many cells result from a single round of mitosis?</div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-5 h-5 rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-semibold text-slate-900 shrink-0 mt-0.5">3</div>
+                  <div className="text-sm text-slate-700">In which phase do sister chromatids separate?</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
