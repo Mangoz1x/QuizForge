@@ -8,12 +8,13 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useForm } from "@/lib/form-context";
-import { Button } from "@/components/ui";
+import { Button, Callout } from "@/components/ui";
 import ExportTutorialDialog, { EXPORT_TUTORIAL_STORAGE_KEY } from "@/components/ExportTutorialDialog";
 
 export default function ExportButton() {
   const {
     form,
+    streaming,
     googleConnected,
     setGoogleConnected,
     exportedFormId,
@@ -23,6 +24,7 @@ export default function ExportButton() {
   const [exporting, setExporting] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showExportTip, setShowExportTip] = useState(false);
   const searchParams = useSearchParams();
   const params = useParams();
   const autoExportRef = useRef(false);
@@ -68,6 +70,7 @@ export default function ExportButton() {
         exportedFormUrl: data.url,
       });
       setExporting(false);
+      setShowExportTip(true);
     } catch (err) {
       setErrorMsg(err.message);
       setExporting(false);
@@ -106,20 +109,34 @@ export default function ExportButton() {
   // Already exported — show open form link
   if (isExported) {
     return (
-      <a
-        href={exportedFormUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition-colors"
-      >
-        Open Form
-        <ExternalLink size={14} />
-      </a>
+      <div className="relative">
+        <a
+          href={exportedFormUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 rounded-lg transition-colors"
+        >
+          Open Form
+          <ExternalLink size={14} />
+        </a>
+        {showExportTip && (
+          <div className="absolute left-0 top-full mt-2 w-64 z-20">
+            <Callout onDismiss={() => setShowExportTip(false)} arrowPosition="left" arrowDirection="up">
+              <div className="pr-5">
+                <p className="text-sm font-medium text-blue-900 mb-0.5">Your Google Form is ready</p>
+                <p className="text-xs text-blue-700/70 leading-relaxed">
+                  Click "Open Form" to view it in Google Forms. Any edits you make here will automatically sync.
+                </p>
+              </div>
+            </Callout>
+          </div>
+        )}
+      </div>
     );
   }
 
   // Not exported yet — show export button
-  const disabled = !hasQuestions || exporting;
+  const disabled = !hasQuestions || exporting || streaming;
   const label = exporting ? "Exporting..." : "Export to Google Forms";
 
   return (
@@ -130,6 +147,7 @@ export default function ExportButton() {
           variant="secondary"
           size="sm"
           icon={exporting ? Loader2 : FileUp}
+          iconClassName={exporting ? "animate-spin" : undefined}
           disabled={disabled}
           onClick={handleExport}
         >
@@ -137,7 +155,7 @@ export default function ExportButton() {
         </Button>
         {disabled && !exporting && (
           <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-3 py-1.5 bg-slate-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Add questions before exporting
+            {streaming ? "Wait for quiz to finish generating" : "Add questions before exporting"}
           </div>
         )}
       </div>

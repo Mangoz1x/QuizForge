@@ -249,9 +249,38 @@ body {
   50% { opacity: 0; }
 }
 
+/* File error dialog — cursor drag animation (5s cycle with pause) */
+@keyframes fileDragMove {
+  0% { top: 0; left: 15px; opacity: 0; }
+  5% { top: 0; left: 15px; opacity: 1; }
+  25% { top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 1; }
+  32% { top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); opacity: 0.5; }
+  38% { top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
+  100% { top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9); opacity: 0; }
+}
+
+@keyframes fileDragReject {
+  0%, 30% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  36% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  40% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  52% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  58% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+}
+
+.file-drag-cursor {
+  animation: fileDragMove 5s ease-in-out both infinite;
+}
+
+.file-drag-reject {
+  animation: fileDragReject 5s ease-out both infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-cursor,
-  .streaming-dot {
+  .streaming-dot,
+  .file-drag-cursor,
+  .file-drag-reject {
     animation: none;
   }
 }

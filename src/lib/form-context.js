@@ -3,6 +3,7 @@
 import { createContext, useContext, useReducer, useCallback, useEffect, useRef } from "react";
 import { createEmptyForm } from "@/lib/form-schema";
 import { saveQuiz, getQuizExport, updateQuizExport } from "@/lib/storage";
+import { clearFiles } from "@/lib/file-storage";
 
 const FormContext = createContext(null);
 
@@ -302,6 +303,13 @@ export function FormProvider({ children, quizId, initialData }) {
       if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     };
   }, [state.form, state.exportedFormId, state.streaming]);
+
+  // Clean up IndexedDB files when leaving the editor
+  useEffect(() => {
+    return () => {
+      clearFiles().catch(() => {});
+    };
+  }, []);
 
   const value = {
     ...state,

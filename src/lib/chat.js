@@ -81,10 +81,30 @@ export async function sendChatMessage({
   onQuestion,
   onQuestionModified,
 }) {
+  // Resolve file IDs from all user messages to full file records (with base64 data) from IndexedDB
+  const { getFile } = await import("@/lib/file-storage");
+
+  // Build a map of messageIndex -> files for messages that have fileIds
+  const filesByMessage = {};
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+    if (msg.role === "user" && msg.fileIds && msg.fileIds.length > 0) {
+      const results = await Promise.all(msg.fileIds.map((id) => getFile(id)));
+      const resolved = results.filter(Boolean).map((f) => ({
+        name: f.name,
+        type: f.type,
+        data: f.data,
+      }));
+      if (resolved.length > 0) {
+        filesByMessage[i] = resolved;
+      }
+    }
+  }
+
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, form }),
+    body: JSON.stringify({ messages, form, filesByMessage }),
     signal,
   });
 

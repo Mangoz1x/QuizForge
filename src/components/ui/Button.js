@@ -21,6 +21,7 @@ export default function Button({
   size = "md",
   disabled = false,
   icon: Icon,
+  iconClassName,
   iconPosition = "left",
   className = "",
   ...props
@@ -39,9 +40,9 @@ export default function Button({
       `}
       {...props}
     >
-      {Icon && iconPosition === "left" && <Icon size={size === "sm" ? 14 : 16} />}
+      {Icon && iconPosition === "left" && <Icon size={size === "sm" ? 14 : 16} className={iconClassName} />}
       {children}
-      {Icon && iconPosition === "right" && <Icon size={size === "sm" ? 14 : 16} />}
+      {Icon && iconPosition === "right" && <Icon size={size === "sm" ? 14 : 16} className={iconClassName} />}
     </button>
   );
 }

@@ -1,20 +1,36 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { SendHorizontal, Square, FileText, X } from "lucide-react";
+import { SendHorizontal, Square, FileText, X, Image, FileIcon, Paperclip } from "lucide-react";
 import { useForm } from "@/lib/form-context";
 import { sendChatMessage } from "@/lib/chat";
+import { validateFile, saveFile, deleteFile, hashFileContent, findByHash, MAX_FILES, ALL_ACCEPTED_TYPES, SUPPORTED_TYPES } from "@/lib/file-storage";
 import ArtifactSidebar from "@/components/ArtifactSidebar";
 import ArtifactTip from "@/components/ArtifactTip";
+import FileErrorDialog, { classifyFileError, buildFileErrorInfo } from "@/components/FileErrorDialog";
 
 let attachmentCounter = Date.now();
 
-export default function ChatBar() {
+function getFileIcon(type) {
+  if (SUPPORTED_TYPES.images.includes(type)) return Image;
+  return FileText;
+}
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export default function ChatBar({ addFilesRef }) {
   const [input, setInput] = useState("");
-  const [attachments, setAttachments] = useState([]);
+  const [attachments, setAttachments] = useState([]); // text attachments (pasted)
+  const [fileAttachments, setFileAttachments] = useState([]); // file attachments { id, name, type, size, preview }
+  const [fileError, setFileError] = useState(null); // { message, type } for dialog
   const [openAttachmentId, setOpenAttachmentId] = useState(null);
   const [tipDismissed, setTipDismissed] = useState(false);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
   const abortRef = useRef(null);
   const baselineFormRef = useRef(null);
   const pendingIdsRef = useRef([]);
@@ -37,7 +53,21 @@ export default function ChatBar() {
     clearPending,
   } = useForm();
 
+  // Allow parent (FormBuilder) to add files via drag-and-drop
+  const addFiles = useCallback((files) => {
+    setFileAttachments((prev) => {
+      const remaining = MAX_FILES - prev.length - attachments.length;
+      return [...prev, ...files.slice(0, Math.max(0, remaining))];
+    });
+  }, [attachments.length]);
+
+  // Register the addFiles function on the ref so FormBuilder can call it
+  if (addFilesRef) addFilesRef.current = addFiles;
+
   const hasAttachments = attachments.length > 0;
+  const hasFileAttachments = fileAttachments.length > 0;
+  const hasAnyAttachments = hasAttachments || hasFileAttachments;
+  const totalAttachmentCount = attachments.length + fileAttachments.length;
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -47,6 +77,14 @@ export default function ChatBar() {
   }, []);
 
   const handlePaste = useCallback((e) => {
+    // Check for pasted files (e.g. screenshots)
+    const files = Array.from(e.clipboardData.files);
+    if (files.length > 0) {
+      e.preventDefault();
+      processFiles(files);
+      return;
+    }
+
     const text = e.clipboardData.getData("text/plain");
     if (text.length > 500) {
       e.preventDefault();
@@ -55,11 +93,17 @@ export default function ChatBar() {
         { id: ++attachmentCounter, content: text },
       ]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const removeAttachment = useCallback((id) => {
     setAttachments((prev) => prev.filter((a) => a.id !== id));
     setOpenAttachmentId((prev) => (prev === id ? null : prev));
+  }, []);
+
+  const removeFileAttachment = useCallback((id) => {
+    setFileAttachments((prev) => prev.filter((f) => f.id !== id));
+    deleteFile(id).catch(() => {}); // User explicitly removed before sending
   }, []);
 
   const updateAttachmentContent = useCallback((id, text) => {
@@ -68,10 +112,90 @@ export default function ChatBar() {
     );
   }, []);
 
+  const showFileError = useCallback((message, fileName = null) => {
+    setFileError({ message, type: classifyFileError(message), fileName });
+  }, []);
+
+  const processFiles = useCallback(async (files) => {
+    setFileError(null);
+    const remaining = MAX_FILES - totalAttachmentCount;
+    if (remaining <= 0) {
+      showFileError(`You can attach up to ${MAX_FILES} files per message. Remove some attachments to add more.`);
+      return;
+    }
+
+    const filesToProcess = files.slice(0, remaining);
+    const saved = [];
+    const failed = []; // { name, error, type (classifyFileError key) }
+
+    if (files.length > remaining) {
+      const skipped = files.slice(remaining);
+      for (const f of skipped) {
+        failed.push({ name: f.name, error: "Too many files", type: "TOO_MANY_FILES" });
+      }
+    }
+
+    const batchHashes = new Set();
+
+    for (const file of filesToProcess) {
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        failed.push({ name: file.name, error: validation.error, type: classifyFileError(validation.error) });
+        continue;
+      }
+
+      try {
+        const hash = await hashFileContent(file);
+
+        // Check against already-attached files
+        const existingInAttachments = fileAttachments.some((f) => f.hash === hash);
+        // Check against other files in this batch
+        const existingInBatch = batchHashes.has(hash);
+        // Check against files in IndexedDB (from other sources like drag-drop)
+        const existingInDB = !existingInAttachments && !existingInBatch ? await findByHash(hash) : null;
+
+        if (existingInAttachments || existingInBatch || existingInDB) {
+          failed.push({ name: file.name, error: "This file has already been attached.", type: "DUPLICATE" });
+          continue;
+        }
+
+        batchHashes.add(hash);
+        const record = await saveFile(file);
+        saved.push({
+          id: record.id,
+          name: record.name,
+          type: record.type,
+          size: record.size,
+          hash: record.hash,
+          preview: record.preview,
+        });
+      } catch {
+        failed.push({ name: file.name, error: "Failed to process file.", type: "GENERIC" });
+      }
+    }
+
+    if (saved.length > 0) {
+      setFileAttachments((prev) => [...prev, ...saved]);
+    }
+
+    const errorInfo = buildFileErrorInfo(saved.length, failed);
+    if (errorInfo) {
+      setFileError(errorInfo);
+    }
+  }, [totalAttachmentCount, fileAttachments, showFileError]);
+
+  const handleFileSelect = useCallback((e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) processFiles(files);
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  }, [processFiles]);
+
   const handleSend = useCallback(async () => {
     const text = input.trim();
-    if ((!text && !hasAttachments) || streaming) return;
+    if ((!text && !hasAnyAttachments) || streaming) return;
 
+    // Build the display content for the user message
     let fullContent = text;
     if (hasAttachments) {
       const attachmentTexts = attachments
@@ -84,17 +208,31 @@ export default function ChatBar() {
       fullContent = `${text}\n\n${attachmentTexts}`;
     }
 
+    // Collect file IDs to send to the API
+    const fileIds = fileAttachments.map((f) => f.id);
+
     // Snapshot the current form for modification detection
     baselineFormRef.current = structuredClone(form);
 
     setInput("");
     setAttachments([]);
+    setFileAttachments([]);
+
+    setFileError(null);
     setOpenAttachmentId(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
 
-    addMessage({ role: "user", content: fullContent });
+    // Build display message (include file names for context)
+    let displayContent = fullContent;
+    if (fileIds.length > 0) {
+      const fileNames = fileAttachments.map((f) => f.name).join(", ");
+      const fileLabel = fileIds.length === 1 ? `Attached: ${fileNames}` : `Attached ${fileIds.length} files: ${fileNames}`;
+      displayContent = displayContent ? `${displayContent}\n\n${fileLabel}` : fileLabel;
+    }
+
+    addMessage({ role: "user", content: displayContent, fileIds: fileIds.length > 0 ? fileIds : undefined });
     pendingIdsRef.current = [];
     clearPending();
     setStreaming(true);
@@ -106,7 +244,7 @@ export default function ChatBar() {
 
     try {
       const result = await sendChatMessage({
-        messages: [...messages, { role: "user", content: fullContent }],
+        messages: [...messages, { role: "user", content: fullContent, fileIds: fileIds.length > 0 ? fileIds : undefined }],
         form,
         signal: abort.signal,
         onTextUpdate: (msg) => {
@@ -167,7 +305,7 @@ export default function ChatBar() {
       clearPending();
       abortRef.current = null;
     }
-  }, [input, attachments, hasAttachments, streaming, form, messages, addMessage, setForm, setStreaming, setStreamingMessage, setError, updateFormHeader, appendQuestion, highlightQuestions, clearHighlights, pushHistory, setPendingQuestions, clearPending]);
+  }, [input, attachments, fileAttachments, hasAttachments, hasAnyAttachments, streaming, form, messages, addMessage, setForm, setStreaming, setStreamingMessage, setError, updateFormHeader, appendQuestion, highlightQuestions, clearHighlights, pushHistory, setPendingQuestions, clearPending]);
 
   const handleStop = useCallback(() => {
     if (abortRef.current) {
@@ -218,8 +356,10 @@ export default function ChatBar() {
 
         {/* Input area */}
         <div className="bg-white">
-          {hasAttachments && (
+          {/* Attachment chips */}
+          {hasAnyAttachments && (
             <div className="px-3 pt-2.5 flex flex-wrap gap-1.5">
+              {/* Text attachments */}
               {attachments.map((att, i) => (
                 <button
                   key={att.id}
@@ -244,10 +384,66 @@ export default function ChatBar() {
                   </span>
                 </button>
               ))}
+
+              {/* File attachments */}
+              {fileAttachments.map((file) => {
+                const Icon = getFileIcon(file.type);
+                const isImage = SUPPORTED_TYPES.images.includes(file.type);
+                return (
+                  <div
+                    key={file.id}
+                    className="group inline-flex items-center gap-1.5 pl-1.5 pr-1 py-1 bg-slate-50 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-100/70 transition-colors text-left"
+                  >
+                    {isImage && file.preview ? (
+                      <img
+                        src={`data:${file.type};base64,${file.preview}`}
+                        alt=""
+                        className="w-5 h-5 rounded object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <Icon size={13} className="text-slate-400 flex-shrink-0 ml-0.5" />
+                    )}
+                    <span className="text-xs text-slate-600 truncate max-w-32">
+                      {file.name}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {formatFileSize(file.size)}
+                    </span>
+                    <span
+                      role="button"
+                      onClick={() => removeFileAttachment(file.id)}
+                      className="p-0.5 text-slate-300 hover:text-slate-500 rounded transition-colors flex-shrink-0 cursor-pointer"
+                      aria-label="Remove file"
+                    >
+                      <X size={12} />
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
 
           <div className="flex items-end gap-2 p-2">
+            {/* File upload button */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={streaming || totalAttachmentCount >= MAX_FILES}
+              className="flex-shrink-0 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+              aria-label="Attach file"
+              title="Attach PDF, image, or text file"
+            >
+              <Paperclip size={16} />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ALL_ACCEPTED_TYPES.join(",")}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
             <textarea
               ref={textareaRef}
               value={input}
@@ -257,7 +453,7 @@ export default function ChatBar() {
               }}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              placeholder={hasAttachments ? "Describe what to do with this content..." : "Describe your quiz or ask for changes..."}
+              placeholder={hasAnyAttachments ? "Describe what to do with this content..." : "Describe your quiz or ask for changes..."}
               rows={1}
               disabled={streaming}
               className="flex-1 resize-none bg-transparent text-sm text-slate-900 placeholder:text-slate-400 disabled:opacity-50 focus:outline-none py-2 px-2 leading-relaxed"
@@ -273,7 +469,7 @@ export default function ChatBar() {
             ) : (
               <button
                 onClick={handleSend}
-                disabled={!input.trim() && !hasAttachments}
+                disabled={!input.trim() && !hasAnyAttachments}
                 className="flex-shrink-0 p-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Send message"
               >
@@ -292,6 +488,14 @@ export default function ChatBar() {
           onContentChange={(text) => updateAttachmentContent(openAttachment.id, text)}
         />
       )}
+
+      <FileErrorDialog
+        open={!!fileError}
+        errorType={fileError?.type}
+        message={fileError?.message}
+        fileName={fileError?.fileName}
+        onClose={() => setFileError(null)}
+      />
     </>
   );
 }

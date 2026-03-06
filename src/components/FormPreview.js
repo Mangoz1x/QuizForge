@@ -5,7 +5,7 @@ import { useForm } from "@/lib/form-context";
 import QuestionCard from "@/components/QuestionCard";
 import EmptyState from "@/components/EmptyState";
 
-export default function FormPreview() {
+export default function FormPreview({ onFilesSelected }) {
   const { form, streaming } = useForm();
   const hasQuestions = form.questions.length > 0;
 
@@ -26,7 +26,7 @@ export default function FormPreview() {
               <span className="text-sm text-slate-500">Building your quiz...</span>
             </div>
           ) : (
-            <EmptyState />
+            <EmptyState onFilesSelected={onFilesSelected} />
           )
         ) : (
           form.questions.map((question, index) => (
