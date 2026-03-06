@@ -11,6 +11,8 @@ import { useForm } from "@/lib/form-context";
 import { Button, Callout } from "@/components/ui";
 import ExportTutorialDialog, { EXPORT_TUTORIAL_STORAGE_KEY } from "@/components/ExportTutorialDialog";
 
+const EXPORT_TIP_STORAGE_KEY = "quizforge_export_tip_seen";
+
 export default function ExportButton() {
   const {
     form,
@@ -70,7 +72,9 @@ export default function ExportButton() {
         exportedFormUrl: data.url,
       });
       setExporting(false);
-      setShowExportTip(true);
+      if (!localStorage.getItem(EXPORT_TIP_STORAGE_KEY)) {
+        setShowExportTip(true);
+      }
     } catch (err) {
       setErrorMsg(err.message);
       setExporting(false);
@@ -106,6 +110,17 @@ export default function ExportButton() {
     doExport();
   }
 
+  function dismissExportTip() {
+    setShowExportTip(false);
+    localStorage.setItem(EXPORT_TIP_STORAGE_KEY, "1");
+  }
+
+  useEffect(() => {
+    if (!showExportTip) return;
+    const timer = setTimeout(dismissExportTip, 30000);
+    return () => clearTimeout(timer);
+  }, [showExportTip]);
+
   // Already exported — show open form link
   if (isExported) {
     return (
@@ -121,11 +136,11 @@ export default function ExportButton() {
         </a>
         {showExportTip && (
           <div className="absolute left-0 top-full mt-2 w-64 z-20">
-            <Callout onDismiss={() => setShowExportTip(false)} arrowPosition="left" arrowDirection="up">
+            <Callout onDismiss={dismissExportTip} arrowPosition="left" arrowDirection="up">
               <div className="pr-5">
                 <p className="text-sm font-medium text-blue-900 mb-0.5">Your Google Form is ready</p>
                 <p className="text-xs text-blue-700/70 leading-relaxed">
-                  Click "Open Form" to view it in Google Forms. Any edits you make here will automatically sync.
+                  Click &ldquo;Open Form&rdquo; to view it in Google Forms. Any edits you make here will automatically sync.
                 </p>
               </div>
             </Callout>

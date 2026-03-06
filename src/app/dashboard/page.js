@@ -32,9 +32,9 @@ export default function DashboardPage() {
     router.push(`/dashboard/${id}`);
   }
 
-  function handleDelete(e, id) {
+  async function handleDelete(e, id) {
     e.stopPropagation();
-    deleteQuiz(id);
+    await deleteQuiz(id);
     setRefreshKey((k) => k + 1);
   }
 

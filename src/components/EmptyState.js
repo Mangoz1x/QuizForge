@@ -44,7 +44,7 @@ export default function EmptyState({ onFilesSelected }) {
             </div>
             <div className="w-px h-3 bg-slate-200" />
             <div className="flex items-center gap-1.5 text-slate-400">
-              <Image size={14} />
+              <Image size={14} aria-hidden="true" />
               <span className="text-xs">Images</span>
             </div>
             <div className="w-px h-3 bg-slate-200" />

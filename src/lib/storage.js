@@ -54,8 +54,21 @@ export function saveQuiz(id, { form, messages }) {
   localStorage.setItem(quizKey(id), JSON.stringify(data));
 }
 
-export function deleteQuiz(id) {
+export async function deleteQuiz(id) {
   if (typeof window === "undefined") return;
+
+  // Clean up any files stored in IndexedDB for this quiz
+  const quiz = getQuiz(id);
+  if (quiz?.messages) {
+    const { deleteFile } = await import("@/lib/file-storage");
+    const fileIds = quiz.messages
+      .filter((m) => m.fileIds)
+      .flatMap((m) => m.fileIds);
+    for (const fileId of fileIds) {
+      deleteFile(fileId).catch(() => {});
+    }
+  }
+
   localStorage.removeItem(quizKey(id));
 }
 

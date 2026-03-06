@@ -24,13 +24,13 @@ export default function QuestionCard({ question, index }) {
       style={{ animationDelay: `${index * 75}ms` }}
     >
       {isHighlighted && (
-        <div className="absolute -inset-[2px] rounded-[10px] gradient-ring" />
+        <div className="absolute -inset-[2px] rounded-[18px] gradient-ring" />
       )}
       {isPending && (
-        <div className="absolute -inset-[2px] rounded-[10px] working-ring" />
+        <div className="absolute -inset-[2px] rounded-[18px] working-ring" />
       )}
 
-      <div className={`relative bg-white border border-slate-200 rounded-lg transition-opacity ${streaming ? "opacity-60" : ""}`}>
+      <div className={`relative bg-white border border-slate-200 rounded-2xl transition-opacity ${streaming ? "opacity-60" : ""}`}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <div className="flex items-center gap-3">

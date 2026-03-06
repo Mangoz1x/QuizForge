@@ -152,7 +152,12 @@ export async function saveFile(file) {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     const request = store.put(record);
-    request.onsuccess = () => resolve(record);
+    request.onsuccess = () => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("quizforge-files-changed"));
+      }
+      resolve(record);
+    };
     request.onerror = () => reject(request.error);
     tx.oncomplete = () => db.close();
   });
@@ -176,7 +181,13 @@ export async function deleteFile(id) {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     const request = store.delete(id);
-    request.onsuccess = () => resolve();
+    request.onsuccess = () => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("quizforge-files-changed"));
+        window.dispatchEvent(new CustomEvent("quizforge-file-deleted", { detail: id }));
+      }
+      resolve();
+    };
     request.onerror = () => reject(request.error);
     tx.oncomplete = () => db.close();
   });
@@ -203,7 +214,12 @@ export async function clearFiles() {
     const tx = db.transaction(STORE_NAME, "readwrite");
     const store = tx.objectStore(STORE_NAME);
     const request = store.clear();
-    request.onsuccess = () => resolve();
+    request.onsuccess = () => {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("quizforge-files-changed"));
+      }
+      resolve();
+    };
     request.onerror = () => reject(request.error);
     tx.oncomplete = () => db.close();
   });

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
-import { SendHorizontal, Square, FileText, X, Image, FileIcon, Paperclip } from "lucide-react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { SendHorizontal, Square, FileText, X, Image, FileIcon, Paperclip, Trash2, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "@/lib/form-context";
 import { sendChatMessage } from "@/lib/chat";
-import { validateFile, saveFile, deleteFile, hashFileContent, findByHash, MAX_FILES, ALL_ACCEPTED_TYPES, SUPPORTED_TYPES } from "@/lib/file-storage";
+import { validateFile, saveFile, deleteFile, getAllFiles, hashFileContent, findByHash, MAX_FILES, ALL_ACCEPTED_TYPES, SUPPORTED_TYPES } from "@/lib/file-storage";
 import ArtifactSidebar from "@/components/ArtifactSidebar";
 import ArtifactTip from "@/components/ArtifactTip";
 import FileErrorDialog, { classifyFileError, buildFileErrorInfo } from "@/components/FileErrorDialog";
@@ -28,9 +29,15 @@ export default function ChatBar({ addFilesRef }) {
   const [fileAttachments, setFileAttachments] = useState([]); // file attachments { id, name, type, size, preview }
   const [fileError, setFileError] = useState(null); // { message, type } for dialog
   const [openAttachmentId, setOpenAttachmentId] = useState(null);
+  const [openFileId, setOpenFileId] = useState(null);
   const [tipDismissed, setTipDismissed] = useState(false);
+  const [sessionFiles, setSessionFiles] = useState([]);
+  const [filesMenuOpen, setFilesMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const filesMenuRef = useRef(null);
+  const filesButtonRef = useRef(null);
   const abortRef = useRef(null);
   const baselineFormRef = useRef(null);
   const pendingIdsRef = useRef([]);
@@ -63,6 +70,50 @@ export default function ChatBar({ addFilesRef }) {
 
   // Register the addFiles function on the ref so FormBuilder can call it
   if (addFilesRef) addFilesRef.current = addFiles;
+
+  // Remove pending attachments if deleted externally
+  useEffect(() => {
+    function handleDeleted(e) {
+      const deletedId = e.detail;
+      setFileAttachments((prev) => prev.filter((f) => f.id !== deletedId));
+      setOpenFileId((prev) => (prev === deletedId ? null : prev));
+    }
+    window.addEventListener("quizforge-file-deleted", handleDeleted);
+    return () => window.removeEventListener("quizforge-file-deleted", handleDeleted);
+  }, []);
+
+  // Track all session files from IndexedDB
+  const refreshSessionFiles = useCallback(() => {
+    getAllFiles().then(setSessionFiles).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    refreshSessionFiles();
+    function handleChange() { refreshSessionFiles(); }
+    window.addEventListener("quizforge-files-changed", handleChange);
+    return () => window.removeEventListener("quizforge-files-changed", handleChange);
+  }, [refreshSessionFiles]);
+
+  // Refresh when menu opens
+  useEffect(() => {
+    if (filesMenuOpen) refreshSessionFiles();
+  }, [filesMenuOpen, refreshSessionFiles]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!filesMenuOpen) return;
+    function handleClick(e) {
+      const inButton = filesMenuRef.current?.contains(e.target);
+      // Check if click is inside the fixed menu (find it by data attribute)
+      const menu = document.querySelector("[data-files-menu]");
+      const inMenu = menu?.contains(e.target);
+      if (!inButton && !inMenu) {
+        setFilesMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [filesMenuOpen]);
 
   const hasAttachments = attachments.length > 0;
   const hasFileAttachments = fileAttachments.length > 0;
@@ -110,6 +161,17 @@ export default function ChatBar({ addFilesRef }) {
     setAttachments((prev) =>
       prev.map((a) => (a.id === id ? { ...a, content: text } : a))
     );
+  }, []);
+
+  const removeSessionFile = useCallback(async (e, id) => {
+    e.stopPropagation();
+    await deleteFile(id).catch(() => {});
+    setSessionFiles((prev) => prev.filter((f) => f.id !== id));
+  }, []);
+
+  const previewSessionFile = useCallback((file) => {
+    setOpenFileId(file.id);
+    setFilesMenuOpen(false);
   }, []);
 
   const showFileError = useCallback((message, fileName = null) => {
@@ -220,6 +282,7 @@ export default function ChatBar({ addFilesRef }) {
 
     setFileError(null);
     setOpenAttachmentId(null);
+    setOpenFileId(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -327,6 +390,7 @@ export default function ChatBar({ addFilesRef }) {
   const displayMessage = streaming ? streamingMessage : lastAssistantMessage?.content;
   const hasResponse = displayMessage || (streaming && !streamingMessage);
   const openAttachment = attachments.find((a) => a.id === openAttachmentId);
+  const openFile = fileAttachments.find((f) => f.id === openFileId) || sessionFiles.find((f) => f.id === openFileId);
 
   return (
     <>
@@ -340,7 +404,7 @@ export default function ChatBar({ addFilesRef }) {
         <div className="rounded-2xl shadow-lg overflow-hidden border border-slate-200">
         {/* AI response area */}
         {hasResponse && (
-          <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+          <div className="bg-white px-4 py-3 border-b border-slate-200">
             {displayMessage ? (
               <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{displayMessage}</p>
             ) : (
@@ -390,9 +454,11 @@ export default function ChatBar({ addFilesRef }) {
                 const Icon = getFileIcon(file.type);
                 const isImage = SUPPORTED_TYPES.images.includes(file.type);
                 return (
-                  <div
+                  <button
                     key={file.id}
-                    className="group inline-flex items-center gap-1.5 pl-1.5 pr-1 py-1 bg-slate-50 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-100/70 transition-colors text-left"
+                    type="button"
+                    onClick={() => setOpenFileId(file.id)}
+                    className="group inline-flex items-center gap-1.5 pl-1.5 pr-1 py-1 bg-slate-50 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-100/70 transition-colors text-left cursor-pointer"
                   >
                     {isImage && file.preview ? (
                       <img
@@ -411,30 +477,122 @@ export default function ChatBar({ addFilesRef }) {
                     </span>
                     <span
                       role="button"
-                      onClick={() => removeFileAttachment(file.id)}
+                      onClick={(e) => { e.stopPropagation(); removeFileAttachment(file.id); }}
                       className="p-0.5 text-slate-300 hover:text-slate-500 rounded transition-colors flex-shrink-0 cursor-pointer"
                       aria-label="Remove file"
                     >
                       <X size={12} />
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           )}
 
           <div className="flex items-end gap-2 p-2">
-            {/* File upload button */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={streaming || totalAttachmentCount >= MAX_FILES}
-              className="flex-shrink-0 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-              aria-label="Attach file"
-              title="Attach PDF, image, or text file"
-            >
-              <Paperclip size={16} />
-            </button>
+            {/* File menu button */}
+            <div className="flex-shrink-0" ref={filesMenuRef}>
+              <button
+                ref={filesButtonRef}
+                type="button"
+                onClick={() => {
+                  if (!filesMenuOpen && filesButtonRef.current) {
+                    const rect = filesButtonRef.current.getBoundingClientRect();
+                    setMenuPos({ bottom: window.innerHeight - rect.top + 8, left: rect.left });
+                  }
+                  setFilesMenuOpen((v) => !v);
+                }}
+                disabled={streaming}
+                className="relative p-2.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                aria-label="Manage files"
+              >
+                <Paperclip size={16} />
+                {sessionFiles.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 flex items-center justify-center px-1 text-[10px] font-medium text-white bg-slate-900 rounded-full">
+                    {sessionFiles.length}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+              {filesMenuOpen && menuPos && (
+                <motion.div
+                  data-files-menu
+                  initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="fixed w-72 bg-white border border-slate-200 rounded-lg z-50 overflow-hidden shadow-lg"
+                  style={{ bottom: menuPos.bottom, left: menuPos.left }}
+                >
+                  {/* Upload button */}
+                  <button
+                    type="button"
+                    onClick={() => { fileInputRef.current?.click(); setFilesMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer border-b border-slate-100"
+                  >
+                    <Plus size={14} className="text-slate-400" />
+                    Upload files
+                  </button>
+
+                  {/* File list or empty state */}
+                  {sessionFiles.length > 0 ? (
+                    <>
+                      <div className="px-3 py-1.5">
+                        <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                          Files available to AI
+                        </p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {sessionFiles.map((file) => {
+                          const Icon = getFileIcon(file.type);
+                          const isImage = SUPPORTED_TYPES.images.includes(file.type);
+                          return (
+                            <button
+                              key={file.id}
+                              type="button"
+                              onClick={() => previewSessionFile(file)}
+                              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 group cursor-pointer text-left"
+                            >
+                              {isImage && file.preview ? (
+                                <img
+                                  src={`data:${file.type};base64,${file.preview}`}
+                                  alt=""
+                                  className="w-7 h-7 rounded object-cover flex-shrink-0 border border-slate-200"
+                                />
+                              ) : (
+                                <div className="w-7 h-7 rounded bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                  <Icon size={13} className="text-slate-400" />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs text-slate-700 truncate">{file.name}</p>
+                                <p className="text-[10px] text-slate-400">{formatFileSize(file.size)}</p>
+                              </div>
+                              <span
+                                role="button"
+                                onClick={(e) => removeSessionFile(e, file.id)}
+                                className="p-1 text-slate-300 hover:text-red-500 rounded transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100"
+                                aria-label="Remove file"
+                              >
+                                <Trash2 size={13} />
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="px-3 py-4 text-center">
+                      <p className="text-xs text-slate-400">
+                        Uploaded files will appear here
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+              </AnimatePresence>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -461,7 +619,7 @@ export default function ChatBar({ addFilesRef }) {
             {streaming ? (
               <button
                 onClick={handleStop}
-                className="flex-shrink-0 p-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                className="flex-shrink-0 p-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
                 aria-label="Stop generating"
               >
                 <Square size={16} />
@@ -470,7 +628,7 @@ export default function ChatBar({ addFilesRef }) {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() && !hasAnyAttachments}
-                className="flex-shrink-0 p-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex-shrink-0 p-2.5 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Send message"
               >
                 <SendHorizontal size={16} />
@@ -486,6 +644,13 @@ export default function ChatBar({ addFilesRef }) {
           content={openAttachment.content}
           onClose={() => setOpenAttachmentId(null)}
           onContentChange={(text) => updateAttachmentContent(openAttachment.id, text)}
+        />
+      )}
+
+      {openFile && (
+        <ArtifactSidebar
+          file={openFile}
+          onClose={() => setOpenFileId(null)}
         />
       )}
 
